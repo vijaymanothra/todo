@@ -85,8 +85,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 
 /* ── Subtasks ── */
 .subtasks { margin-top: 0.55rem; display: flex; flex-direction: column; gap: 3px; }
-.subtask { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--muted); cursor: pointer; padding: 3px 0; -webkit-tap-highlight-color: transparent; }
+.subtask { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; font-size: 0.78rem; color: var(--muted); cursor: pointer; padding: 3px 0; -webkit-tap-highlight-color: transparent; }
 .subtask.done { color: var(--accent); text-decoration: line-through; }
+.subtask-time { margin-left: 23px; font-size: 0.72rem; color: var(--muted); white-space: normal; }
+.add-task-form { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
+.add-task-form input { flex: 1 1 140px; min-width: 120px; border: 1px solid var(--border); border-radius: 10px; padding: 0.65rem 0.85rem; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--text); background: white; }
+.add-task-form button { border: none; border-radius: 10px; padding: 0.65rem 1rem; background: var(--accent); color: white; font-weight: 600; cursor: pointer; }
 .mini-check { width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid var(--border-strong); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
 .subtask.done .mini-check { background: var(--accent); border-color: var(--accent); }
 
@@ -249,6 +253,14 @@ svg.mini-tick { fill: none; stroke: white; stroke-width: 2.5; stroke-linecap: ro
     <div class="yp-bar"><div class="yp-fill" id="year-fill"></div></div>
   </div>
   <div id="task-area"></div>
+  <div class="section add-task-section">
+    <div class="section-label"><span class="dot"></span>Add task</div>
+    <div class="add-task-form">
+      <input type="text" id="new-task-title" placeholder="Task name" />
+      <input type="text" id="new-task-time" placeholder="Time (e.g. 3:00 – 3:30 PM)" />
+      <button type="button" onclick="addCustomTask()">Add</button>
+    </div>
+  </div>
   <div class="section" style="padding-top:1.1rem;">
     <div class="quote-bar"><div id="quote-text"></div><div class="q-author" id="quote-author"></div></div>
   </div>
@@ -315,31 +327,38 @@ function buildTasks(dateKey, dayType) {
   const d = new Date(dateKey + 'T00:00:00');
   const oilDay = isOilDay(d);
   const isWeekend = dayType === 'weekend';
+  const state = loadState(dateKey);
+  const customTasks = (state.customTasks || []).map(t => ({ ...t, section: t.section || 'Extra' }));
 
   const morningSubtasks = [
     { id: 'mr_brush',    label: 'Brush',      time: '9:10 – 9:15' },
     { id: 'mr_washroom', label: 'Washroom',   time: '9:15 – 9:25' },
-    { id: 'mr_bath',     label: 'Bath',       time: '9:25 – 9:40' },
-    { id: 'mr_bfast',    label: 'Breakfast',  time: '9:40 – 9:55' },
-    { id: 'mr_tabs',     label: 'Tablets',    time: '9:55 – 9:57' },
-    { id: 'mr_minox',    label: 'Apply M', time: '9:57 – 10:10', timer: { secs: 25*60, label: '25 min wait', id: 'tmr_minox' } },
-    ...(oilDay ? [
+    ...(dayType === 'wfh' ? [
+      { id: 'trya_oil',  label: 'Apply hair oil', time: '9:25 – 9:40', timer: { secs: 15*60, label: '15 min wait', id: 'tmr_oil' } },
+      { id: 'mr_bath',  label: 'Bath',          time: '9:40 – 9:55' }
+    ] : [
+      { id: 'mr_bath',  label: 'Bath',          time: '9:25 – 9:40' }
+    ]),
+    { id: 'mr_bfast',    label: 'Breakfast',  time: dayType === 'wfh' ? '9:55 – 10:10' : '9:40 – 9:55' },
+    { id: 'mr_tabs',     label: 'Tablets',    time: dayType === 'wfh' ? '10:10 – 10:12' : '9:55 – 9:57' },
+    { id: 'mr_minox',    label: 'Apply M', time: dayType === 'wfh' ? '10:12 – 10:25' : '9:57 – 10:10', timer: { secs: 13*60, label: '13 min wait', id: 'tmr_minox' } },
+    ...(oilDay && dayType !== 'wfh' ? [
       { id: 'trya_oil',  label: 'Apply hair oil', timer: { secs: 30*60, label: '30 min wait', id: 'tmr_oil' } },
       { id: 'trya_bath', label: 'Head bath (after oil)' }
     ] : []),
-    { id: 'mr_ready',    label: 'Get ready',  time: '10:00 – 10:15' }
+    { id: 'mr_ready',    label: 'Get ready',  time: dayType === 'wfh' ? '10:15 – 10:30' : '10:00 – 10:15' }
   ];
 
   const nightTasks = [
     {
       id: 'trya_pm', title: 'Evening Routine', time: '10:00 – 11:00 PM', section: 'Night',
       subtasks: [
-        { id: 'trya_pm_tabs',  label: 'Tablets' },
-        { id: 'trya_pm_minox', label: 'Apply minoxidil', timer: { secs: 25*60, label: '25 min wait', id: 'tmr_pm_minox' } },
-        { id: 'sk_strips',     label: 'Teeth whitening strips', timer: { secs: 30*60, label: '30 min', id: 'tmr_strips' } },
-        { id: 'sk_cleanser',   label: 'Wash face with cleanser' },
-        { id: 'sk_cream',      label: 'Apply night cream' },
-        { id: 'sk_lip',        label: 'Lip balm' }
+        { id: 'trya_pm_tabs',  label: 'Tablets', time: '10:00 – 10:02' },
+        { id: 'trya_pm_minox', label: 'Apply M', time: '10:05 – 10:32', timer: { secs: 27*60, label: '27 min wait', id: 'tmr_pm_minox' } },
+        { id: 'sk_strips',     label: 'Teeth whitening strips', time: '10:02 – 10:32', timer: { secs: 30*60, label: '30 min', id: 'tmr_strips' } },
+        { id: 'sk_cleanser',   label: 'Wash face with cleanser', time: '10:35 – 10:40' },
+        { id: 'sk_cream',      label: 'Apply night cream', time: '10:40 – 10:45' },
+        { id: 'sk_lip',        label: 'Lip balm', time: '10:45 – 10:50' }
       ]
     },
     { id: 'sleep', title: 'Sleep', time: '11:00 PM', section: 'Night' }
@@ -349,7 +368,8 @@ function buildTasks(dateKey, dayType) {
     { id: 'wake', title: 'Wake up', time: '7:30 AM', section: 'Morning' },
     { id: 'gym',  title: 'Gym',     time: '8:00 – 9:00 AM', section: 'Morning' },
     { id: 'trya_am', title: 'Morning Routine', time: '9:10 – 10:15 AM', section: 'Morning', subtasks: morningSubtasks },
-    ...nightTasks
+    ...nightTasks,
+    ...customTasks
   ];
 
   const base = [
@@ -360,7 +380,24 @@ function buildTasks(dateKey, dayType) {
   if (dayType === 'wfo') base.push({ id: 'travel_out', title: 'Travel to office', time: '10:15 – 11:30 AM', section: 'Commute' });
   base.push({ id: 'office', title: dayType === 'wfo' ? 'Office' : 'Work from home', time: '11:30 AM – 8:30 PM', section: 'Work' });
   if (dayType === 'wfo') base.push({ id: 'travel_back', title: 'Travel home', time: '8:30 – 9:30 PM', section: 'Evening' });
-  return [...base, ...nightTasks];
+  return [...base, ...nightTasks, ...customTasks];
+}
+
+function addCustomTask() {
+  const titleEl = document.getElementById('new-task-title');
+  const timeEl = document.getElementById('new-task-time');
+  const title = titleEl.value.trim();
+  const time = timeEl.value.trim();
+  if (!title) { showToast('Enter a task name first.'); return; }
+  const dateKey = currentDateKey;
+  const state = loadState(dateKey);
+  state.customTasks = state.customTasks || [];
+  const id = 'custom_' + Date.now();
+  state.customTasks.push({ id, title, time, section: 'Extra' });
+  saveState(dateKey, state);
+  titleEl.value = '';
+  timeEl.value = '';
+  renderAll();
 }
 
 function getKey(dateKey) { return 'tracker_' + dateKey; }
@@ -523,10 +560,13 @@ function renderTasks() {
           const subEl = document.createElement('div');
           subEl.className = 'subtask' + (subDone ? ' done' : '');
           subEl.innerHTML = `
-            <div class="mini-check">
-              <svg class="mini-tick" viewBox="0 0 8 8" width="8" height="8"><polyline points="1,4 3,6.5 7,1.5"/></svg>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="mini-check">
+                <svg class="mini-tick" viewBox="0 0 8 8" width="8" height="8"><polyline points="1,4 3,6.5 7,1.5"/></svg>
+              </div>
+              <span>${st.label}</span>
             </div>
-            <span>${st.label}</span>
+            ${st.time ? `<div class="subtask-time">${st.time}</div>` : ''}
           `;
 
           // Append timer if this subtask has one
