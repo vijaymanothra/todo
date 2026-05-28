@@ -77,6 +77,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .task.done { background: var(--done-bg); border-color: rgba(45,90,61,0.2); }
 .task.done .task-title { color: var(--done-text); text-decoration: line-through; text-decoration-color: rgba(45,90,61,0.4); }
 .task.done .task-time { color: var(--accent-mid); }
+.task.free-time { background: var(--timer-bg); border-color: var(--gold); }
+.task.free-time .task-title, .task.free-time .task-time { color: var(--timer-active); }
 .check { width: 21px; height: 21px; border-radius: 50%; border: 1.5px solid var(--border-strong); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s; margin-top: 1px; }
 .task.done .check { background: var(--accent); border-color: var(--accent); }
 .task-body { flex: 1; min-width: 0; }
@@ -331,46 +333,107 @@ function buildTasks(dateKey, dayType) {
   const customTasks = (state.customTasks || []).map(t => ({ ...t, section: t.section || 'Extra' }));
 
   const morningSubtasks = [
-    { id: 'mr_brush',    label: 'Brush',      time: '9:10 – 9:15' },
-    { id: 'mr_washroom', label: 'Washroom',   time: '9:15 – 9:25' },
+    { id: 'mr_brush',    label: 'Brush',      time: '9:10 – 9:15 AM' },
+    { id: 'mr_washroom', label: 'Washroom',   time: '9:15 – 9:25 AM' },
     ...(dayType === 'wfh' ? [
-      { id: 'trya_oil',  label: 'Apply hair oil', time: '9:25 – 9:40', timer: { secs: 15*60, label: '15 min wait', id: 'tmr_oil' } },
-      { id: 'mr_bath',  label: 'Bath',          time: '9:40 – 9:55' }
+      { id: 'trya_oil',  label: 'Apply hair oil', time: '9:25 – 9:40 AM', timer: { secs: 15*60, label: '15 min wait', id: 'tmr_oil' } },
+      { id: 'mr_bath',  label: 'Bath',          time: '9:40 – 9:55 AM' }
     ] : [
-      { id: 'mr_bath',  label: 'Bath',          time: '9:25 – 9:40' }
+      { id: 'mr_bath',  label: 'Bath',          time: '9:25 – 9:40 AM' }
     ]),
-    { id: 'mr_bfast',    label: 'Breakfast',  time: dayType === 'wfh' ? '9:55 – 10:10' : '9:40 – 9:55' },
-    { id: 'mr_tabs',     label: 'Tablets',    time: dayType === 'wfh' ? '10:10 – 10:12' : '9:55 – 9:57' },
-    { id: 'mr_minox',    label: 'Apply M', time: dayType === 'wfh' ? '10:12 – 10:25' : '9:57 – 10:10', timer: { secs: 13*60, label: '13 min wait', id: 'tmr_minox' } },
+    { id: 'mr_bfast',    label: 'Breakfast',  time: dayType === 'wfh' ? '9:55 – 10:10 AM' : '9:40 – 9:55 AM' },
+    { id: 'mr_tabs',     label: 'Tablets',    time: dayType === 'wfh' ? '10:10 – 10:12 AM' : '9:55 – 9:57 AM' },
+    { id: 'mr_minox',    label: 'Apply M', time: dayType === 'wfh' ? '10:12 – 10:25 AM' : '9:57 – 10:10 AM', timer: { secs: 13*60, label: '13 min wait', id: 'tmr_minox' } },
     ...(oilDay && dayType !== 'wfh' ? [
       { id: 'trya_oil',  label: 'Apply hair oil', timer: { secs: 30*60, label: '30 min wait', id: 'tmr_oil' } },
       { id: 'trya_bath', label: 'Head bath (after oil)' }
     ] : []),
-    { id: 'mr_ready',    label: 'Get ready',  time: dayType === 'wfh' ? '10:15 – 10:30' : '10:00 – 10:15' }
+    { id: 'mr_ready',    label: 'Get ready',  time: dayType === 'wfh' ? '10:15 – 10:30 AM' : '10:00 – 10:15 AM' }
   ];
 
   const nightTasks = [
     {
       id: 'trya_pm', title: 'Evening Routine', time: '10:00 – 11:00 PM', section: 'Night',
       subtasks: [
-        { id: 'trya_pm_tabs',  label: 'Tablets', time: '10:00 – 10:02' },
-        { id: 'trya_pm_minox', label: 'Apply M', time: '10:05 – 10:32', timer: { secs: 27*60, label: '27 min wait', id: 'tmr_pm_minox' } },
-        { id: 'sk_strips',     label: 'Teeth whitening strips', time: '10:02 – 10:32', timer: { secs: 30*60, label: '30 min', id: 'tmr_strips' } },
-        { id: 'sk_cleanser',   label: 'Wash face with cleanser', time: '10:35 – 10:40' },
-        { id: 'sk_cream',      label: 'Apply night cream', time: '10:40 – 10:45' },
-        { id: 'sk_lip',        label: 'Lip balm', time: '10:45 – 10:50' }
+        { id: 'trya_pm_tabs',  label: 'Tablets', time: '10:00 – 10:02 PM' },
+        { id: 'trya_pm_minox', label: 'Apply M', time: '10:05 – 10:32 PM', timer: { secs: 27*60, label: '27 min wait', id: 'tmr_pm_minox' } },
+        { id: 'sk_strips',     label: 'Teeth whitening strips', time: '10:02 – 10:32 PM', timer: { secs: 30*60, label: '30 min', id: 'tmr_strips' } },
+        { id: 'sk_cleanser',   label: 'Wash face with cleanser', time: '10:35 – 10:40 PM' },
+        { id: 'sk_cream',      label: 'Apply night cream', time: '10:40 – 10:45 PM' },
+        { id: 'sk_lip',        label: 'Lip balm', time: '10:45 – 10:50 PM' }
       ]
     },
     { id: 'sleep', title: 'Sleep', time: '11:00 PM', section: 'Night' }
   ];
 
-  if (isWeekend) return [
+  const insertFreeTimeSlots = (tasks) => {
+    const parseTimeValue = (value) => {
+      if (!value) return null;
+      const normalized = value.replace(/\u2013/g, '-').replace(/\s+/g, ' ').trim().toUpperCase();
+      const parts = normalized.split(/\s*[-–]\s*/);
+      if (parts.length !== 2) return null;
+      const parseSingle = (timeStr, fallbackPeriod) => {
+        const normalizedTime = timeStr.replace(/\s+/g, ' ').trim();
+        let match = normalizedTime.match(/^(\d{1,2})(?::(\d{1,2}))?\s*(AM|PM)$/);
+        if (!match && fallbackPeriod) {
+          match = normalizedTime.match(/^(\d{1,2})(?::(\d{1,2}))?$/);
+          if (match) match = [normalizedTime + ' ' + fallbackPeriod, match[1], match[2], fallbackPeriod];
+        }
+        if (!match) return null;
+        let hour = parseInt(match[1], 10);
+        const minute = match[2] ? parseInt(match[2], 10) : 0;
+        const period = match[3];
+        if (hour === 12) hour = period === 'AM' ? 0 : 12;
+        else if (period === 'PM') hour += 12;
+        return hour * 60 + minute;
+      };
+      const end = parseSingle(parts[1]);
+      if (end === null) return null;
+      const start = parseSingle(parts[0], parts[1].includes('AM') ? 'AM' : parts[1].includes('PM') ? 'PM' : null);
+      if (start === null) return null;
+      return { start, end: end <= start ? end + 24 * 60 : end };
+    };
+
+    const formatMinutes = (mins) => {
+      const normalized = mins % (24 * 60);
+      let hour = Math.floor(normalized / 60);
+      const minute = normalized % 60;
+      const suffix = hour >= 12 ? 'PM' : 'AM';
+      if (hour === 0) hour = 12;
+      else if (hour > 12) hour -= 12;
+      return `${hour}:${String(minute).padStart(2, '0')} ${suffix}`;
+    };
+
+    const formatRange = (start, end) => `${formatMinutes(start)} – ${formatMinutes(end)}`;
+    let lastEnd = null;
+    const output = [];
+
+    for (const task of tasks) {
+      const range = parseTimeValue(task.time);
+      if (range && lastEnd !== null && range.start > lastEnd + 4) {
+        output.push({
+          id: `free_${task.id}_${lastEnd}`,
+          title: 'Free time',
+          time: formatRange(lastEnd, range.start),
+          section: 'Available',
+          free: true
+        });
+      }
+      if (range) {
+        lastEnd = lastEnd === null ? range.end : Math.max(lastEnd, range.end);
+      }
+      output.push(task);
+    }
+    return output;
+  };
+
+  if (isWeekend) return insertFreeTimeSlots([
     { id: 'wake', title: 'Wake up', time: '7:30 AM', section: 'Morning' },
     { id: 'gym',  title: 'Gym',     time: '8:00 – 9:00 AM', section: 'Morning' },
     { id: 'trya_am', title: 'Morning Routine', time: '9:10 – 10:15 AM', section: 'Morning', subtasks: morningSubtasks },
     ...nightTasks,
     ...customTasks
-  ];
+  ]);
 
   const base = [
     { id: 'wake', title: 'Wake up', time: '7:30 AM', section: 'Morning' },
@@ -380,7 +443,7 @@ function buildTasks(dateKey, dayType) {
   if (dayType === 'wfo') base.push({ id: 'travel_out', title: 'Travel to office', time: '10:15 – 11:30 AM', section: 'Commute' });
   base.push({ id: 'office', title: dayType === 'wfo' ? 'Office' : 'Work from home', time: '11:30 AM – 8:30 PM', section: 'Work' });
   if (dayType === 'wfo') base.push({ id: 'travel_back', title: 'Travel home', time: '8:30 – 9:30 PM', section: 'Evening' });
-  return [...base, ...nightTasks, ...customTasks];
+  return insertFreeTimeSlots([...base, ...nightTasks, ...customTasks]);
 }
 
 function addCustomTask() {
@@ -392,8 +455,38 @@ function addCustomTask() {
   const dateKey = currentDateKey;
   const state = loadState(dateKey);
   state.customTasks = state.customTasks || [];
+  
+  const parseTimeForSort = (timeStr) => {
+    if (!timeStr) return Infinity;
+    const normalized = timeStr.replace(/\u2013/g, '-').replace(/\s+/g, ' ').trim().toUpperCase();
+    const parts = normalized.split(/\s*[-–]\s*/);
+    if (parts.length < 1) return Infinity;
+    const match = parts[0].match(/^(\d{1,2})(?::(\d{1,2}))?\s*(AM|PM)?$/);
+    if (!match) return Infinity;
+    let hour = parseInt(match[1], 10);
+    const minute = match[2] ? parseInt(match[2], 10) : 0;
+    const period = match[3];
+    if (hour === 12) hour = period === 'AM' ? 0 : 12;
+    else if (period === 'PM') hour += 12;
+    return hour * 60 + minute;
+  };
+  
   const id = 'custom_' + Date.now();
-  state.customTasks.push({ id, title, time, section: 'Extra' });
+  const newTask = { id, title, time, section: 'Extra' };
+  const newTaskTime = parseTimeForSort(time);
+  
+  state.customTasks.sort((a, b) => parseTimeForSort(a.time) - parseTimeForSort(b.time));
+  
+  let inserted = false;
+  for (let i = 0; i < state.customTasks.length; i++) {
+    if (newTaskTime < parseTimeForSort(state.customTasks[i].time)) {
+      state.customTasks.splice(i, 0, newTask);
+      inserted = true;
+      break;
+    }
+  }
+  if (!inserted) state.customTasks.push(newTask);
+  
   saveState(dateKey, state);
   titleEl.value = '';
   timeEl.value = '';
@@ -529,13 +622,21 @@ function renderTasks() {
     secDiv.appendChild(lbl);
 
     sec.tasks.forEach(t => {
-      total++;
+      const isFree = !!t.free;
+      if (!isFree) {
+        total++;
+        const isDone = !!state[t.id];
+        if (isDone) doneCount++;
+      }
       const isDone = !!state[t.id];
-      if (isDone) doneCount++;
-
       const card = document.createElement('div');
-      card.className = 'task' + (isDone ? ' done' : '');
-      card.innerHTML = `
+      card.className = 'task' + (isDone ? ' done' : '') + (isFree ? ' free-time' : '');
+      card.innerHTML = isFree ? `
+        <div class="task-body">
+          <div class="task-title">${t.title}</div>
+          <div class="task-time">${t.time}</div>
+        </div>
+      ` : `
         <div class="check">
           <svg class="tick" viewBox="0 0 10 10" width="10" height="10"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>
         </div>
@@ -546,10 +647,12 @@ function renderTasks() {
         </div>
       `;
 
-      card.addEventListener('click', e => {
-        if (e.target.closest('.subtask') || e.target.closest('.timer-widget') || e.target.closest('.timer-btn')) return;
-        const s = loadState(currentDateKey); s[t.id] = !s[t.id]; saveState(currentDateKey, s); renderAll();
-      });
+      if (!isFree) {
+        card.addEventListener('click', e => {
+          if (e.target.closest('.subtask') || e.target.closest('.timer-widget') || e.target.closest('.timer-btn')) return;
+          const s = loadState(currentDateKey); s[t.id] = !s[t.id]; saveState(currentDateKey, s); renderAll();
+        });
+      }
 
       secDiv.appendChild(card);
 
