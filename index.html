@@ -316,31 +316,30 @@ function buildTasks(dateKey, dayType) {
   const oilDay = isOilDay(d);
   const isWeekend = dayType === 'weekend';
 
-  const trayaSubtasks = [
-    { id: 'trya_tab1', label: 'Tablet 1' },
-    { id: 'trya_tab2', label: 'Tablet 2' },
-    { id: 'trya_minox', label: 'Apply minoxidil', timer: { secs: 25*60, label: '25 min wait', id: 'tmr_minox' } },
+  const morningSubtasks = [
+    { id: 'mr_brush',    label: 'Brush',      time: '9:10 – 9:15' },
+    { id: 'mr_washroom', label: 'Washroom',   time: '9:15 – 9:25' },
+    { id: 'mr_bath',     label: 'Bath',       time: '9:25 – 9:40' },
+    { id: 'mr_bfast',    label: 'Breakfast',  time: '9:40 – 9:55' },
+    { id: 'mr_tabs',     label: 'Tablets',    time: '9:55 – 9:57' },
+    { id: 'mr_minox',    label: 'Apply M', time: '9:57 – 10:10', timer: { secs: 25*60, label: '25 min wait', id: 'tmr_minox' } },
     ...(oilDay ? [
-      { id: 'trya_oil', label: 'Apply hair oil', timer: { secs: 30*60, label: '30 min wait', id: 'tmr_oil' } },
+      { id: 'trya_oil',  label: 'Apply hair oil', timer: { secs: 30*60, label: '30 min wait', id: 'tmr_oil' } },
       { id: 'trya_bath', label: 'Head bath (after oil)' }
-    ] : [])
+    ] : []),
+    { id: 'mr_ready',    label: 'Get ready',  time: '10:00 – 10:15' }
   ];
 
   const nightTasks = [
     {
-      id: 'trya_pm', title: 'Evening Routine', time: '10:00 PM', section: 'Night',
+      id: 'trya_pm', title: 'Evening Routine', time: '10:00 – 11:00 PM', section: 'Night',
       subtasks: [
-        { id: 'trya_pm1', label: 'Tablet 1' },
-        { id: 'trya_pm2', label: 'Tablet 2' }
-      ]
-    },
-    {
-      id: 'skincare', title: 'Skincare', time: '10:00 – 11:00 PM', section: 'Night',
-      subtasks: [
-        { id: 'sk_strips', label: 'Teeth whitening strips', timer: { secs: 30*60, label: '30 min', id: 'tmr_strips' } },
-        { id: 'sk_cleanser', label: 'Wash face with cleanser' },
-        { id: 'sk_cream', label: 'Apply night cream' },
-        { id: 'sk_lip', label: 'Lip balm' }
+        { id: 'trya_pm_tabs',  label: 'Tablets' },
+        { id: 'trya_pm_minox', label: 'Apply minoxidil', timer: { secs: 25*60, label: '25 min wait', id: 'tmr_pm_minox' } },
+        { id: 'sk_strips',     label: 'Teeth whitening strips', timer: { secs: 30*60, label: '30 min', id: 'tmr_strips' } },
+        { id: 'sk_cleanser',   label: 'Wash face with cleanser' },
+        { id: 'sk_cream',      label: 'Apply night cream' },
+        { id: 'sk_lip',        label: 'Lip balm' }
       ]
     },
     { id: 'sleep', title: 'Sleep', time: '11:00 PM', section: 'Night' }
@@ -348,19 +347,17 @@ function buildTasks(dateKey, dayType) {
 
   if (isWeekend) return [
     { id: 'wake', title: 'Wake up', time: '7:30 AM', section: 'Morning' },
-    { id: 'gym', title: 'Gym', time: '8:00 – 9:00 AM', section: 'Morning' },
-    { id: 'trya_am', title: 'Morning Routine', time: '9:10 AM', section: 'Morning', subtasks: trayaSubtasks },
-    { id: 'food', title: 'Have food & rest', time: 'Morning', section: 'Morning' },
+    { id: 'gym',  title: 'Gym',     time: '8:00 – 9:00 AM', section: 'Morning' },
+    { id: 'trya_am', title: 'Morning Routine', time: '9:10 – 10:15 AM', section: 'Morning', subtasks: morningSubtasks },
     ...nightTasks
   ];
 
   const base = [
     { id: 'wake', title: 'Wake up', time: '7:30 AM', section: 'Morning' },
-    { id: 'gym', title: 'Gym', time: '8:00 – 9:00 AM', section: 'Morning' },
-    { id: 'trya_am', title: 'Morning Routine', time: '9:10 – 10:00 AM', section: 'Morning', subtasks: trayaSubtasks },
-    { id: 'food', title: 'Have food & get ready', time: '9:10 – 10:00 AM', section: 'Morning' }
+    { id: 'gym',  title: 'Gym',     time: '8:00 – 9:00 AM', section: 'Morning' },
+    { id: 'trya_am', title: 'Morning Routine', time: '9:10 – 10:15 AM', section: 'Morning', subtasks: morningSubtasks }
   ];
-  if (dayType === 'wfo') base.push({ id: 'travel_out', title: 'Travel to office', time: '10:00 – 11:30 AM', section: 'Commute' });
+  if (dayType === 'wfo') base.push({ id: 'travel_out', title: 'Travel to office', time: '10:15 – 11:30 AM', section: 'Commute' });
   base.push({ id: 'office', title: dayType === 'wfo' ? 'Office' : 'Work from home', time: '11:30 AM – 8:30 PM', section: 'Work' });
   if (dayType === 'wfo') base.push({ id: 'travel_back', title: 'Travel home', time: '8:30 – 9:30 PM', section: 'Evening' });
   return [...base, ...nightTasks];
