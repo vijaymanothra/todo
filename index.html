@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Daily Tracker 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg: #F7F5F0;
+  --card: #FFFFFF;
+  --border: rgba(0,0,0,0.08);
+  --border-strong: rgba(0,0,0,0.15);
+  --text: #1A1A18;
+  --muted: #6B6B65;
+  --accent: #2D5A3D;
+  --accent-light: #E8F2EC;
+  --accent-mid: #4A8C61;
+  --done-bg: #E8F2EC;
+  --done-text: #2D5A3D;
+  --pill-bg: #F0EDE8;
+  --gold: #C8972A;
+  --timer-bg: #FFF8ED;
+  --timer-border: rgba(200,151,42,0.3);
+  --timer-active: #8B5E00;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 4rem; }
+
+/* ── Header ── */
+.header { background: var(--accent); color: white; padding: 1.25rem 1.25rem 0.9rem; position: sticky; top: 0; z-index: 200; }
+.header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+.header h1 { font-family: 'DM Serif Display', serif; font-size: 1.45rem; font-weight: 400; }
+.header .date-str { font-size: 0.77rem; opacity: 0.72; margin-top: 2px; }
+.progress-wrap { margin-top: 0.8rem; }
+.progress-bar { height: 3px; background: rgba(255,255,255,0.25); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: white; border-radius: 2px; transition: width 0.4s ease; }
+.progress-label { font-size: 0.7rem; opacity: 0.78; margin-top: 4px; display: flex; justify-content: space-between; }
+
+/* ── Nav tabs ── */
+.nav-tabs { display: flex; background: var(--card); border-bottom: 1px solid var(--border); }
+.nav-tab { flex: 1; padding: 0.7rem 0; font-size: 0.8rem; font-weight: 500; color: var(--muted); border: none; background: transparent; cursor: pointer; font-family: 'DM Sans', sans-serif; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Views ── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── Day toggle ── */
+.day-toggle { display: flex; gap: 0.45rem; padding: 0.8rem 1.25rem; background: var(--card); border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+.day-toggle::-webkit-scrollbar { display: none; }
+.day-btn { flex-shrink: 0; padding: 0.3rem 0.75rem; border-radius: 100px; border: 1px solid var(--border-strong); background: transparent; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; cursor: pointer; color: var(--muted); transition: all 0.2s; }
+.day-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+.day-btn.today { border-color: var(--accent); color: var(--accent); }
+.day-btn.today.active { background: var(--accent); color: white; }
+
+/* ── Stats ── */
+.stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; padding: 1rem 1.25rem 0; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem 0.5rem; text-align: center; }
+.stat-val { font-size: 1.2rem; font-weight: 600; font-family: 'DM Serif Display', serif; }
+.stat-lbl { font-size: 0.62rem; color: var(--muted); margin-top: 1px; }
+
+/* ── Year bar ── */
+.year-progress { margin: 0.85rem 1.25rem 0; }
+.yp-label { font-size: 0.7rem; color: var(--muted); margin-bottom: 4px; display: flex; justify-content: space-between; }
+.yp-bar { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.yp-fill { height: 100%; background: var(--gold); border-radius: 3px; transition: width 0.5s ease; }
+
+/* ── Section ── */
+.section { padding: 1rem 1.25rem 0; }
+.section-label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.55rem; display: flex; align-items: center; gap: 6px; }
+.section-label .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+/* ── Task card ── */
+.task { background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 0.45rem; padding: 0.8rem 1rem; display: flex; align-items: flex-start; gap: 0.7rem; cursor: pointer; transition: all 0.18s; -webkit-tap-highlight-color: transparent; }
+.task:active { transform: scale(0.985); }
+.task.done { background: var(--done-bg); border-color: rgba(45,90,61,0.2); }
+.task.done .task-title { color: var(--done-text); text-decoration: line-through; text-decoration-color: rgba(45,90,61,0.4); }
+.task.done .task-time { color: var(--accent-mid); }
+.check { width: 21px; height: 21px; border-radius: 50%; border: 1.5px solid var(--border-strong); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s; margin-top: 1px; }
+.task.done .check { background: var(--accent); border-color: var(--accent); }
+.task-body { flex: 1; min-width: 0; }
+.task-title { font-size: 0.9rem; font-weight: 500; line-height: 1.35; }
+.task-time { font-size: 0.73rem; color: var(--muted); margin-top: 2px; }
+
+/* ── Subtasks ── */
+.subtasks { margin-top: 0.55rem; display: flex; flex-direction: column; gap: 3px; }
+.subtask { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--muted); cursor: pointer; padding: 3px 0; -webkit-tap-highlight-color: transparent; }
+.subtask.done { color: var(--accent); text-decoration: line-through; }
+.mini-check { width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid var(--border-strong); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.subtask.done .mini-check { background: var(--accent); border-color: var(--accent); }
+
+/* ── Timer strip ── */
+.timer-widget {
+  margin-top: 6px;
+  margin-left: 23px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+}
+.timer-ring-wrap {
+  position: relative;
+  width: 22px; height: 22px;
+  flex-shrink: 0;
+}
+.timer-ring-svg { transform: rotate(-90deg); display: block; }
+.timer-ring-track { fill: none; stroke: var(--border-strong); stroke-width: 2.5; }
+.timer-ring-fill {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.9s linear;
+}
+.timer-ring-fill.running { stroke: var(--accent); }
+.timer-countdown {
+  font-family: 'DM Serif Display', serif;
+  font-size: 0.82rem;
+  color: var(--text);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 34px;
+}
+.timer-countdown.running { color: var(--accent); }
+.timer-strip-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.timer-action-btn {
+  padding: 3px 10px;
+  border-radius: 100px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  line-height: 1.6;
+}
+.timer-action-btn:active { transform: scale(0.93); }
+.timer-action-btn.paused { background: transparent; color: var(--accent); }
+.timer-done-card {
+  margin-top: 6px;
+  margin-left: 23px;
+  background: var(--done-bg);
+  border: 1px solid rgba(45,90,61,0.15);
+  border-radius: 8px;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--done-text);
+  height: 30px;
+}
+
+/* ── Quote ── */
+.quote-bar { margin: 1rem 1.25rem 0; background: var(--accent); color: white; border-radius: 12px; padding: 0.85rem 1rem; font-family: 'DM Serif Display', serif; font-size: 0.88rem; line-height: 1.5; }
+.quote-bar .q-author { font-family: 'DM Sans', sans-serif; font-size: 0.68rem; opacity: 0.7; margin-top: 4px; }
+
+/* ── Day type badge ── */
+.day-type-badge { font-size: 0.68rem; padding: 3px 9px; border-radius: 100px; font-weight: 600; display: inline-block; }
+.wfo { background: rgba(255,255,255,0.2); color: white; }
+.wfh { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); }
+
+/* ── Calendar ── */
+.cal-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem 0.5rem; }
+.cal-month-label { font-family: 'DM Serif Display', serif; font-size: 1.1rem; }
+.cal-nav-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border-strong); background: transparent; cursor: pointer; font-size: 1rem; color: var(--text); display: flex; align-items: center; justify-content: center; }
+.cal-grid { padding: 0 1.25rem 1rem; }
+.cal-weekdays { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; margin-bottom: 4px; }
+.cal-wd { text-align: center; font-size: 0.65rem; font-weight: 600; color: var(--muted); padding: 4px 0; letter-spacing: 0.03em; }
+.cal-days { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+.cal-day { aspect-ratio: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; border: 1px solid transparent; transition: all 0.15s; font-size: 0.78rem; font-weight: 500; -webkit-tap-highlight-color: transparent; }
+.cal-day:active { transform: scale(0.92); }
+.cal-day.empty { cursor: default; }
+.cal-day.today { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.cal-day.selected { background: var(--accent); color: white !important; border-color: var(--accent); }
+.cal-day.future { color: var(--muted); opacity: 0.5; cursor: default; }
+.cal-day.full { background: var(--done-bg); }
+.cal-day.partial { background: var(--timer-bg); }
+.cal-day.none { background: #FDECEA; }
+.cal-day.selected.full, .cal-day.selected.partial, .cal-day.selected.none { background: var(--accent); }
+
+/* dot indicator under date number */
+.cal-dot { width: 4px; height: 4px; border-radius: 50%; margin-top: 2px; }
+.cal-day.full .cal-dot { background: var(--accent); }
+.cal-day.partial .cal-dot { background: var(--gold); }
+.cal-day.none .cal-dot { background: #C0392B; }
+.cal-day.selected .cal-dot { background: rgba(255,255,255,0.7); }
+
+.cal-legend { display: flex; gap: 0.85rem; padding: 0 1.25rem 1rem; flex-wrap: wrap; }
+.cal-legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.68rem; color: var(--muted); }
+.cal-legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+/* ── Notification toast ── */
+.toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--text); color: white; padding: 0.7rem 1.2rem; border-radius: 100px; font-size: 0.82rem; font-weight: 500; z-index: 999; transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1); white-space: nowrap; pointer-events: none; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+svg.tick { fill: none; stroke: white; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+svg.mini-tick { fill: none; stroke: white; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div>
+      <div id="greeting" style="font-family:'DM Serif Display',serif;font-size:1.45rem;">Good morning</div>
+      <div class="date-str" id="header-date"></div>
+    </div>
+    <span class="day-type-badge wfo" id="day-type-badge">WFO</span>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="main-progress" style="width:0%"></div></div>
+    <div class="progress-label"><span id="done-count">0 done</span><span id="pct-count">0%</span></div>
+  </div>
+</div>
+
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="switchView('today')">Today</button>
+  <button class="nav-tab" onclick="switchView('calendar')">Calendar</button>
+</div>
+
+<!-- TODAY VIEW -->
+<div class="view active" id="view-today">
+  <div class="day-toggle" id="day-toggle"></div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-val" id="streak-val">0</div><div class="stat-lbl">🔥 streak</div></div>
+    <div class="stat-card"><div class="stat-val" id="week-val">0%</div><div class="stat-lbl">this week</div></div>
+    <div class="stat-card"><div class="stat-val" id="total-val">0</div><div class="stat-lbl">tasks done</div></div>
+  </div>
+  <div class="year-progress">
+    <div class="yp-label"><span>2026 progress</span><span id="year-pct"></span></div>
+    <div class="yp-bar"><div class="yp-fill" id="year-fill"></div></div>
+  </div>
+  <div id="task-area"></div>
+  <div class="section" style="padding-top:1.1rem;">
+    <div class="quote-bar"><div id="quote-text"></div><div class="q-author" id="quote-author"></div></div>
+  </div>
+</div>
+
+<!-- CALENDAR VIEW -->
+<div class="view" id="view-calendar">
+  <div class="cal-header">
+    <button class="cal-nav-btn" id="cal-prev">&#8249;</button>
+    <div class="cal-month-label" id="cal-month-label"></div>
+    <button class="cal-nav-btn" id="cal-next">&#8250;</button>
+  </div>
+  <div class="cal-grid">
+    <div class="cal-weekdays">
+      <div class="cal-wd">Mon</div><div class="cal-wd">Tue</div><div class="cal-wd">Wed</div>
+      <div class="cal-wd">Thu</div><div class="cal-wd">Fri</div><div class="cal-wd">Sat</div><div class="cal-wd">Sun</div>
+    </div>
+    <div class="cal-days" id="cal-days"></div>
+  </div>
+  <div class="cal-legend">
+    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--accent)"></div>All done</div>
+    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--gold)"></div>Partial</div>
+    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#C0392B"></div>Missed</div>
+    <div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--border-strong)"></div>Upcoming</div>
+  </div>
+
+  <!-- Selected day preview -->
+  <div id="cal-day-preview" style="padding: 0 1.25rem 1rem; display:none;">
+    <div style="font-size:0.7rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:0.6rem;" id="cal-preview-date"></div>
+    <div id="cal-preview-tasks" style="display:flex;flex-direction:column;gap:6px;"></div>
+    <button onclick="gotoSelectedDay()" style="margin-top:0.75rem;width:100%;padding:0.6rem;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:white;font-family:'DM Sans',sans-serif;font-size:0.85rem;font-weight:600;cursor:pointer;">
+      Open this day →
+    </button>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<script>
+const QUOTES = [
+  { t: "The secret of getting ahead is getting started.", a: "Mark Twain" },
+  { t: "Small daily improvements are the key to staggering long-term results.", a: "Robin Sharma" },
+  { t: "You don't rise to the level of your goals, you fall to the level of your systems.", a: "James Clear" },
+  { t: "Discipline is choosing between what you want now and what you want most.", a: "Abraham Lincoln" },
+  { t: "One day or day one. You decide.", a: "Paulo Coelho" },
+  { t: "The body achieves what the mind believes.", a: "" },
+  { t: "Consistency is what transforms average into excellence.", a: "" },
+  { t: "Win the morning, win the day.", a: "" },
+  { t: "Take care of your body. It's the only place you have to live.", a: "Jim Rohn" },
+  { t: "Progress, not perfection.", a: "" },
+  { t: "Every rep, every meal, every good night's sleep — it compounds.", a: "" },
+  { t: "Show up. Even when you don't feel like it.", a: "" }
+];
+
+// Oil days: Tue=2, Fri=5, Sun=0
+function isOilDay(d) { const dow = d.getDay(); return dow === 0 || dow === 2 || dow === 5; }
+function getDayType(d) { const day = d.getDay(); if (day===0||day===6) return 'weekend'; if (day===2||day===5) return 'wfh'; return 'wfo'; }
+
+// Active timers: { id: { interval, remaining, totalSecs, done } }
+const activeTimers = {};
+
+function buildTasks(dateKey, dayType) {
+  const d = new Date(dateKey + 'T00:00:00');
+  const oilDay = isOilDay(d);
+  const isWeekend = dayType === 'weekend';
+
+  const trayaSubtasks = [
+    { id: 'trya_tab1', label: 'Tablet 1' },
+    { id: 'trya_tab2', label: 'Tablet 2' },
+    { id: 'trya_minox', label: 'Apply minoxidil', timer: { secs: 25*60, label: '25 min wait', id: 'tmr_minox' } },
+    ...(oilDay ? [
+      { id: 'trya_oil', label: 'Apply hair oil', timer: { secs: 30*60, label: '30 min wait', id: 'tmr_oil' } },
+      { id: 'trya_bath', label: 'Head bath (after oil)' }
+    ] : [])
+  ];
+
+  const nightTasks = [
+    {
+      id: 'trya_pm', title: 'Evening Routine', time: '10:00 PM', section: 'Night',
+      subtasks: [
+        { id: 'trya_pm1', label: 'Tablet 1' },
+        { id: 'trya_pm2', label: 'Tablet 2' }
+      ]
+    },
+    {
+      id: 'skincare', title: 'Skincare', time: '10:00 – 11:00 PM', section: 'Night',
+      subtasks: [
+        { id: 'sk_strips', label: 'Teeth whitening strips', timer: { secs: 30*60, label: '30 min', id: 'tmr_strips' } },
+        { id: 'sk_cleanser', label: 'Wash face with cleanser' },
+        { id: 'sk_cream', label: 'Apply night cream' },
+        { id: 'sk_lip', label: 'Lip balm' }
+      ]
+    },
+    { id: 'sleep', title: 'Sleep', time: '11:00 PM', section: 'Night' }
+  ];
+
+  if (isWeekend) return [
+    { id: 'wake', title: 'Wake up', time: '7:30 AM', section: 'Morning' },
+    { id: 'gym', title: 'Gym', time: '8:00 – 9:00 AM', section: 'Morning' },
+    { id: 'trya_am', title: 'Morning Routine', time: '9:10 AM', section: 'Morning', subtasks: trayaSubtasks },
+    { id: 'food', title: 'Have food & rest', time: 'Morning', section: 'Morning' },
+    ...nightTasks
+  ];
+
+  const base = [
+    { id: 'wake', title: 'Wake up', time: '7:30 AM', section: 'Morning' },
+    { id: 'gym', title: 'Gym', time: '8:00 – 9:00 AM', section: 'Morning' },
+    { id: 'trya_am', title: 'Morning Routine', time: '9:10 – 10:00 AM', section: 'Morning', subtasks: trayaSubtasks },
+    { id: 'food', title: 'Have food & get ready', time: '9:10 – 10:00 AM', section: 'Morning' }
+  ];
+  if (dayType === 'wfo') base.push({ id: 'travel_out', title: 'Travel to office', time: '10:00 – 11:30 AM', section: 'Commute' });
+  base.push({ id: 'office', title: dayType === 'wfo' ? 'Office' : 'Work from home', time: '11:30 AM – 8:30 PM', section: 'Work' });
+  if (dayType === 'wfo') base.push({ id: 'travel_back', title: 'Travel home', time: '8:30 – 9:30 PM', section: 'Evening' });
+  return [...base, ...nightTasks];
+}
+
+function getKey(dateKey) { return 'tracker_' + dateKey; }
+function loadState(dateKey) { try { return JSON.parse(localStorage.getItem(getKey(dateKey))) || {}; } catch { return {}; } }
+function saveState(dateKey, state) { localStorage.setItem(getKey(dateKey), JSON.stringify(state)); }
+function formatDateKey(d) { const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0'); return y+'-'+m+'-'+dd; }
+function formatDateLabel(d) { return d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); }
+
+function getWeekDates(refDate) {
+  const today = refDate ? new Date(refDate) : new Date();
+  today.setHours(0,0,0,0);
+  const dow = today.getDay();
+  const monday = new Date(today); monday.setDate(today.getDate() - ((dow+6)%7));
+  return Array.from({length:7}, (_,i) => { const d = new Date(monday); d.setDate(monday.getDate()+i); return d; });
+}
+
+let currentDateKey = formatDateKey(new Date());
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let calSelectedKey = null;
+
+// ── Toast ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ── Timer logic ──
+function fmtTime(s) { const m = Math.floor(s/60), sec = s%60; return m + ':' + String(sec).padStart(2,'0'); }
+
+function startTimer(timerId, totalSecs, onDone) {
+  if (activeTimers[timerId] && activeTimers[timerId].interval) return;
+  let remaining = activeTimers[timerId] ? activeTimers[timerId].remaining : totalSecs;
+  activeTimers[timerId] = { remaining, totalSecs, done: false };
+  const R = 9, C = +(2 * Math.PI * R).toFixed(2);
+
+  const tick = () => {
+    remaining--;
+    activeTimers[timerId].remaining = remaining;
+    const disp = document.getElementById('tmr-disp-' + timerId);
+    const ring = document.getElementById('tmr-ring-' + timerId);
+    const btn = document.getElementById('tmr-btn-' + timerId);
+    if (disp) { disp.textContent = fmtTime(remaining); disp.className = 'timer-countdown running'; }
+    if (ring) {
+      const fraction = Math.max(0, remaining / totalSecs);
+      ring.setAttribute('stroke-dashoffset', (C - C * Math.max(0, remaining / totalSecs)).toFixed(2));
+      ring.className.baseVal = 'timer-ring-fill running';
+    }
+    if (remaining <= 0) {
+      clearInterval(activeTimers[timerId].interval);
+      activeTimers[timerId].done = true;
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Timer done! ✓', { body: 'You can now tick off the step.' });
+      }
+      showToast('⏱ Timer done! Tap the checkbox now.');
+      if (onDone) onDone();
+    }
+  };
+  activeTimers[timerId].interval = setInterval(tick, 1000);
+}
+
+function pauseTimer(timerId) {
+  if (activeTimers[timerId] && activeTimers[timerId].interval) {
+    clearInterval(activeTimers[timerId].interval);
+    activeTimers[timerId].interval = null;
+  }
+}
+
+function requestNotifPermission() {
+  if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+}
+
+// ── View switch ──
+function switchView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + v).classList.add('active');
+  document.querySelectorAll('.nav-tab')[v === 'today' ? 0 : 1].classList.add('active');
+  if (v === 'calendar') renderCalendar();
+}
+
+// ── Day toggle ──
+function renderDayToggle() {
+  const toggle = document.getElementById('day-toggle');
+  toggle.innerHTML = '';
+  const days = getWeekDates(new Date(currentDateKey + 'T00:00:00'));
+  const todayKey = formatDateKey(new Date());
+  ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach((lbl, i) => {
+    const d = days[i], key = formatDateKey(d);
+    const btn = document.createElement('button');
+    btn.className = 'day-btn' + (key === todayKey ? ' today' : '') + (key === currentDateKey ? ' active' : '');
+    btn.textContent = lbl + ' ' + d.getDate();
+    btn.onclick = () => { currentDateKey = key; renderAll(); };
+    toggle.appendChild(btn);
+  });
+}
+
+// ── Tasks ──
+function renderTasks() {
+  const d = new Date(currentDateKey + 'T00:00:00');
+  const dayType = getDayType(d);
+  const tasks = buildTasks(currentDateKey, dayType);
+  const state = loadState(currentDateKey);
+  const todayKey = formatDateKey(new Date());
+
+  const badge = document.getElementById('day-type-badge');
+  const labels = { wfo: 'WFO', wfh: 'WFH', weekend: 'Weekend' };
+  badge.textContent = labels[dayType];
+  badge.className = 'day-type-badge ' + (dayType === 'wfo' ? 'wfo' : 'wfh');
+
+  const area = document.getElementById('task-area');
+  area.innerHTML = '';
+
+  const sections = [];
+  let curSec = null;
+  tasks.forEach(t => {
+    if (t.section !== curSec) { curSec = t.section; sections.push({ label: t.section, tasks: [] }); }
+    sections[sections.length-1].tasks.push(t);
+  });
+
+  let doneCount = 0, total = 0;
+
+  sections.forEach(sec => {
+    const secDiv = document.createElement('div'); secDiv.className = 'section';
+    const lbl = document.createElement('div'); lbl.className = 'section-label';
+    lbl.innerHTML = '<span class="dot"></span>' + sec.label;
+    secDiv.appendChild(lbl);
+
+    sec.tasks.forEach(t => {
+      total++;
+      const isDone = !!state[t.id];
+      if (isDone) doneCount++;
+
+      const card = document.createElement('div');
+      card.className = 'task' + (isDone ? ' done' : '');
+      card.innerHTML = `
+        <div class="check">
+          <svg class="tick" viewBox="0 0 10 10" width="10" height="10"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg>
+        </div>
+        <div class="task-body">
+          <div class="task-title">${t.title}</div>
+          <div class="task-time">${t.time}</div>
+          ${t.subtasks ? '<div class="subtasks" id="sub_' + t.id + '"></div>' : ''}
+        </div>
+      `;
+
+      card.addEventListener('click', e => {
+        if (e.target.closest('.subtask') || e.target.closest('.timer-widget') || e.target.closest('.timer-btn')) return;
+        const s = loadState(currentDateKey); s[t.id] = !s[t.id]; saveState(currentDateKey, s); renderAll();
+      });
+
+      secDiv.appendChild(card);
+
+      if (t.subtasks) {
+        const subCont = card.querySelector('#sub_' + t.id);
+        t.subtasks.forEach(st => {
+          const subDone = !!state[st.id];
+          const subEl = document.createElement('div');
+          subEl.className = 'subtask' + (subDone ? ' done' : '');
+          subEl.innerHTML = `
+            <div class="mini-check">
+              <svg class="mini-tick" viewBox="0 0 8 8" width="8" height="8"><polyline points="1,4 3,6.5 7,1.5"/></svg>
+            </div>
+            <span>${st.label}</span>
+          `;
+
+          // Append timer if this subtask has one
+          if (st.timer && !subDone) {
+            const tid = st.timer.id + '_' + currentDateKey;
+            const tdata = activeTimers[tid];
+            const isRunning = !!(tdata && tdata.interval);
+            const isDoneTimer = !!(tdata && tdata.done);
+            const remaining = tdata ? tdata.remaining : st.timer.secs;
+            const total = st.timer.secs;
+            const R = 9, C = +(2 * Math.PI * R).toFixed(2);
+            const fraction = isDoneTimer ? 0 : (remaining / total);
+            const offset = +(C - C * fraction).toFixed(2);
+            const fillClass = isRunning ? 'running' : '';
+            const countClass = isRunning ? 'running' : '';
+            const btnLabel = isRunning ? 'Pause' : (tdata ? 'Resume' : 'Start');
+            const btnClass = (!isRunning && tdata) ? 'paused' : '';
+
+            if (isDoneTimer) {
+              const doneCard = document.createElement('div');
+              doneCard.className = 'timer-done-card';
+              doneCard.innerHTML = `<svg fill="none" stroke="var(--done-text)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 10 10" width="10" height="10"><polyline points="1.5,5 4,7.5 8.5,2.5"/></svg> Timer done — tick the checkbox`;
+              subEl.appendChild(doneCard);
+            } else {
+              const tw = document.createElement('div');
+              tw.className = 'timer-widget';
+              tw.innerHTML = `
+                <div class="timer-ring-wrap">
+                  <svg class="timer-ring-svg" width="22" height="22" viewBox="0 0 22 22">
+                    <circle class="timer-ring-track" cx="11" cy="11" r="${R}"/>
+                    <circle class="timer-ring-fill ${fillClass}" id="tmr-ring-${tid}" cx="11" cy="11" r="${R}" stroke-dasharray="${C}" stroke-dashoffset="${offset}"/>
+                  </svg>
+                </div>
+                <span class="timer-countdown ${countClass}" id="tmr-disp-${tid}">${fmtTime(remaining)}</span>
+                <span class="timer-strip-label">${st.timer.label}</span>
+                <button class="timer-action-btn ${btnClass}" id="tmr-btn-${tid}" onclick="handleTimerBtn('${tid}',${total})">${btnLabel}</button>
+              `;
+              subEl.appendChild(tw);
+            }
+          }
+
+          subEl.addEventListener('click', e => {
+            if (e.target.closest('.timer-widget')) return;
+            e.stopPropagation();
+            const s = loadState(currentDateKey); s[st.id] = !s[st.id]; saveState(currentDateKey, s);
+            renderAll();
+          });
+          subCont.appendChild(subEl);
+        });
+      }
+    });
+    area.appendChild(secDiv);
+  });
+
+  const pct = total ? Math.round(doneCount/total*100) : 0;
+  document.getElementById('main-progress').style.width = pct + '%';
+  document.getElementById('done-count').textContent = doneCount + ' / ' + total + ' done';
+  document.getElementById('pct-count').textContent = pct + '%';
+}
+
+function handleTimerBtn(tid, totalSecs) {
+  requestNotifPermission();
+  const tdata = activeTimers[tid];
+  if (tdata && tdata.interval) {
+    pauseTimer(tid);
+    const btn = document.getElementById('tmr-btn-' + tid);
+    const disp = document.getElementById('tmr-disp-' + tid);
+    if (btn) { btn.textContent = 'Resume'; btn.classList.add('paused'); }
+    if (disp) disp.className = 'timer-countdown';
+    const ring = document.getElementById('tmr-ring-' + tid);
+    if (ring) ring.className.baseVal = 'timer-ring-fill';
+  } else {
+    startTimer(tid, totalSecs, () => renderTasks());
+    const btn = document.getElementById('tmr-btn-' + tid);
+    if (btn) { btn.textContent = 'Pause'; btn.classList.remove('paused'); }
+  }
+}
+
+// ── Stats ──
+function getDayCompletion(dateKey) {
+  const d = new Date(dateKey + 'T00:00:00');
+  const tasks = buildTasks(dateKey, getDayType(d));
+  const state = loadState(dateKey);
+  const done = tasks.filter(t => state[t.id]).length;
+  return { done, total: tasks.length, pct: tasks.length ? done/tasks.length : 0 };
+}
+
+function renderStats() {
+  let streak = 0;
+  const today = new Date(); today.setHours(0,0,0,0);
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today); d.setDate(today.getDate()-i);
+    const key = formatDateKey(d);
+    const { pct } = getDayCompletion(key);
+    if (pct >= 0.5) streak++; else break;
+  }
+  document.getElementById('streak-val').textContent = streak;
+
+  let wTotal = 0, wDone = 0;
+  getWeekDates().forEach(d => {
+    const { done, total } = getDayCompletion(formatDateKey(d));
+    wTotal += total; wDone += done;
+  });
+  document.getElementById('week-val').textContent = wTotal ? Math.round(wDone/wTotal*100)+'%' : '0%';
+
+  let allDone = 0;
+  for (const k of Object.keys(localStorage)) {
+    if (!k.startsWith('tracker_')) continue;
+    try { allDone += Object.values(JSON.parse(localStorage.getItem(k))).filter(Boolean).length; } catch {}
+  }
+  document.getElementById('total-val').textContent = allDone;
+}
+
+function renderYearProgress() {
+  const now = new Date(), start = new Date('2026-01-01'), end = new Date('2026-12-31T23:59:59');
+  const pct = Math.min(100, Math.round((now-start)/(end-start)*100));
+  document.getElementById('year-fill').style.width = pct + '%';
+  document.getElementById('year-pct').textContent = pct + '% of 2026';
+}
+
+function renderHeader() {
+  document.getElementById('header-date').textContent = formatDateLabel(new Date(currentDateKey+'T00:00:00'));
+  const h = new Date().getHours();
+  const g = h<12 ? 'Good morning' : h<17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('greeting').textContent = g;
+}
+
+function renderQuote() {
+  const q = QUOTES[new Date().getDate() % QUOTES.length];
+  document.getElementById('quote-text').textContent = '"' + q.t + '"';
+  document.getElementById('quote-author').textContent = q.a ? '— ' + q.a : '';
+}
+
+// ── Calendar ──
+function renderCalendar() {
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-month-label').textContent = monthNames[calMonth] + ' ' + calYear;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const todayKey = formatDateKey(today);
+  const firstDay = new Date(calYear, calMonth, 1);
+  const lastDay = new Date(calYear, calMonth+1, 0);
+  const startDow = (firstDay.getDay()+6)%7; // Mon=0
+  const daysInMonth = lastDay.getDate();
+
+  const grid = document.getElementById('cal-days');
+  grid.innerHTML = '';
+
+  // Empty cells before first day
+  for (let i = 0; i < startDow; i++) {
+    const el = document.createElement('div'); el.className = 'cal-day empty'; grid.appendChild(el);
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(calYear, calMonth, day);
+    const key = formatDateKey(d);
+    const isFuture = d > today;
+    const isToday = key === todayKey;
+    const isSelected = key === calSelectedKey;
+
+    const el = document.createElement('div');
+    el.className = 'cal-day';
+    if (isToday) el.classList.add('today');
+    if (isSelected) el.classList.add('selected');
+    if (isFuture) el.classList.add('future');
+
+    let dotColor = '';
+    if (!isFuture) {
+      const { pct, done, total } = getDayCompletion(key);
+      if (done > 0 || total > 0) {
+        if (pct >= 1) el.classList.add('full');
+        else if (pct > 0) el.classList.add('partial');
+        else el.classList.add('none');
+        dotColor = '<div class="cal-dot"></div>';
+      }
+    }
+
+    el.innerHTML = '<span>' + day + '</span>' + (dotColor || '');
+
+    if (!isFuture || isToday) {
+      el.addEventListener('click', () => {
+        calSelectedKey = key;
+        renderCalendar();
+        showCalPreview(key);
+      });
+    }
+    grid.appendChild(el);
+  }
+}
+
+function showCalPreview(key) {
+  const preview = document.getElementById('cal-day-preview');
+  const d = new Date(key + 'T00:00:00');
+  const tasks = buildTasks(key, getDayType(d));
+  const state = loadState(key);
+  const { done, total, pct } = getDayCompletion(key);
+
+  document.getElementById('cal-preview-date').textContent = formatDateLabel(d);
+  preview.style.display = 'block';
+
+  const container = document.getElementById('cal-preview-tasks');
+  container.innerHTML = '';
+
+  // Summary pill
+  const summary = document.createElement('div');
+  summary.style.cssText = 'font-size:0.8rem;font-weight:600;padding:6px 12px;border-radius:8px;margin-bottom:4px;display:inline-block;';
+  if (pct >= 1) { summary.style.background='var(--done-bg)'; summary.style.color='var(--done-text)'; summary.textContent = '✓ All done — ' + total + '/' + total; }
+  else if (pct > 0) { summary.style.background='var(--timer-bg)'; summary.style.color='var(--timer-active)'; summary.textContent = '◑ Partial — ' + done + '/' + total + ' done'; }
+  else { summary.style.background='#FDECEA'; summary.style.color='#C0392B'; summary.textContent = '✗ Missed — 0/' + total; }
+  container.appendChild(summary);
+
+  // Mini task list
+  tasks.forEach(t => {
+    const row = document.createElement('div');
+    const isDone = !!state[t.id];
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:0.78rem;color:' + (isDone ? 'var(--done-text)' : 'var(--muted)') + ';padding:2px 0;';
+    row.innerHTML = `<span style="width:12px;height:12px;border-radius:50%;background:${isDone?'var(--accent)':'var(--border-strong)'};flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+      ${isDone ? '<svg fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 8 8" width="7" height="7"><polyline points="1,4 3,6 7,1.5"/></svg>' : ''}
+    </span><span${isDone?' style="text-decoration:line-through;opacity:0.7"':''}>${t.title}</span>`;
+    container.appendChild(row);
+  });
+}
+
+function gotoSelectedDay() {
+  if (!calSelectedKey) return;
+  currentDateKey = calSelectedKey;
+  switchView('today');
+  renderAll();
+}
+
+// Nav buttons
+document.getElementById('cal-prev').onclick = () => {
+  calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; }
+  calSelectedKey = null;
+  document.getElementById('cal-day-preview').style.display = 'none';
+  renderCalendar();
+};
+document.getElementById('cal-next').onclick = () => {
+  calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; }
+  calSelectedKey = null;
+  document.getElementById('cal-day-preview').style.display = 'none';
+  renderCalendar();
+};
+
+function renderAll() {
+  renderDayToggle();
+  renderHeader();
+  renderTasks();
+  renderStats();
+  renderYearProgress();
+  renderQuote();
+}
+
+renderAll();
+</script>
+</body>
+</html>
