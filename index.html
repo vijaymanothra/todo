@@ -184,7 +184,7 @@ document.addEventListener('visibilitychange', () => {
     if (!t) return;
     if (t.endTime) {
       const msLeft = t.endTime - Date.now();
-      t.remaining = Math.max(0, Math.ceil(msLeft / 1000));
+      t.remaining = Math.max(0, Math.round(msLeft / 1000));
       // clear stored endTime if timer wasn't running (paused) — keep it only for running timers
     }
 
@@ -196,6 +196,7 @@ document.addEventListener('visibilitychange', () => {
       }
       showToast('⏱ Timer done! Tap the checkbox now.');
       if (t.onDone) t.onDone();
+      saveTimersToStorage();
     } else {
       // update UI for this timer
       const disp = document.getElementById('tmr-disp-' + timerId);
@@ -359,8 +360,34 @@ const QUOTES = [
 function isOilDay(d) { const dow = d.getDay(); return dow === 0 || dow === 2 || dow === 5; }
 function getDayType(d) { const day = d.getDay(); if (day===0||day===6) return 'weekend'; if (day===2||day===5) return 'wfh'; return 'wfo'; }
 
-// Active timers: { id: { interval, remaining, totalSecs, done } }
+// Active timers: { id: { interval, remaining, totalSecs, done, endTime, meta } }
 const activeTimers = {};
+const TIMERS_STORAGE_KEY = 'active_timers_state_v1';
+
+function saveTimersToStorage() {
+  try {
+    const copy = {};
+    Object.keys(activeTimers).forEach(k => {
+      const t = activeTimers[k];
+      copy[k] = { remaining: t.remaining, totalSecs: t.totalSecs, done: !!t.done, endTime: t.endTime || null, meta: t.meta || null };
+    });
+    localStorage.setItem(TIMERS_STORAGE_KEY, JSON.stringify(copy));
+  } catch (e) { /* ignore storage errors */ }
+}
+
+function loadTimersFromStorage() {
+  try {
+    const raw = localStorage.getItem(TIMERS_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    Object.keys(parsed).forEach(tid => {
+      const src = parsed[tid];
+      // only restore timers that look valid
+      if (!src || typeof src.totalSecs !== 'number') return;
+      activeTimers[tid] = { remaining: src.remaining, totalSecs: src.totalSecs, done: !!src.done, endTime: src.endTime, interval: null, meta: src.meta };
+    });
+  } catch (e) { /* ignore */ }
+}
 let notifPermissionRequested = false;
 
 function buildTasks(dateKey, dayType) {
@@ -577,7 +604,7 @@ function autoStartNextRoutineTimer(taskId, subtaskId) {
   startTimer(tid, next.subtask.timer.secs, () => {
     renderTasks();
     autoStartNextRoutineTimer(taskId, next.subtask.id);
-  });
+  }, { taskId: next.parent.id, subtaskId: next.subtask.id });
   renderAll();
   showToast('Next: ' + next.subtask.label);
 }
@@ -612,7 +639,8 @@ function showToast(msg) {
 // ── Timer logic ──
 function fmtTime(s) { const m = Math.floor(s/60), sec = s%60; return m + ':' + String(sec).padStart(2,'0'); }
 
-function startTimer(timerId, totalSecs, onDone) {
+
+function startTimer(timerId, totalSecs, onDone, meta) {
   // If already running, ignore
   if (activeTimers[timerId] && activeTimers[timerId].interval) return;
 
@@ -623,7 +651,8 @@ function startTimer(timerId, totalSecs, onDone) {
   // Compute endTime (ms) and save onDone so visibility handler can call it
   const now = Date.now();
   const endTime = now + remaining * 1000;
-  activeTimers[timerId] = { remaining, totalSecs, done: false, endTime, onDone };
+  activeTimers[timerId] = { remaining, totalSecs, done: false, endTime, onDone, meta: meta || null, interval: null };
+  saveTimersToStorage();
 
   const R = 9, C = +(2 * Math.PI * R).toFixed(2);
 
@@ -632,7 +661,7 @@ function startTimer(timerId, totalSecs, onDone) {
     if (!t) return;
     if (t.endTime) {
       const msLeft = t.endTime - Date.now();
-      const secsLeft = Math.max(0, Math.ceil(msLeft / 1000));
+      const secsLeft = Math.max(0, Math.round(msLeft / 1000));
       t.remaining = secsLeft;
     }
 
@@ -651,11 +680,17 @@ function startTimer(timerId, totalSecs, onDone) {
       if (t.interval) clearInterval(t.interval);
       t.interval = null;
       t.done = true;
+      saveTimersToStorage();
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification('Timer done! ✓', { body: 'You can now tick off the step.' });
       }
       showToast('⏱ Timer done! Tap the checkbox now.');
       if (t.onDone) t.onDone();
+      // If this timer had meta for chaining but no onDone (rehydration case), trigger chain
+      if (!t.onDone && t.meta && t.meta.taskId && t.meta.subtaskId) {
+        renderTasks();
+        autoStartNextRoutineTimer(t.meta.taskId, t.meta.subtaskId);
+      }
     }
   };
 
@@ -672,9 +707,10 @@ function pauseTimer(timerId) {
     // Recalculate remaining from endTime and drop endTime so resume uses remaining
     if (t.endTime) {
       const msLeft = t.endTime - Date.now();
-      t.remaining = Math.max(0, Math.ceil(msLeft / 1000));
+      t.remaining = Math.max(0, Math.round(msLeft / 1000));
       delete t.endTime;
     }
+    saveTimersToStorage();
   }
 }
 
@@ -871,7 +907,7 @@ function handleTimerBtn(tid, totalSecs, taskId, subtaskId) {
     startTimer(tid, totalSecs, () => {
       renderTasks();
       if (taskId && subtaskId) autoStartNextRoutineTimer(taskId, subtaskId);
-    });
+    }, { taskId, subtaskId });
     const btn = document.getElementById('tmr-btn-' + tid);
     if (btn) { btn.textContent = 'Pause'; btn.classList.remove('paused'); }
   }
@@ -1052,6 +1088,34 @@ function renderAll() {
   renderYearProgress();
   renderQuote();
 }
+
+// Rehydrate timers saved from previous session (if any)
+loadTimersFromStorage();
+Object.keys(activeTimers).forEach(tid => {
+  const t = activeTimers[tid];
+  if (!t) return;
+  if (t.endTime) {
+    const msLeft = t.endTime - Date.now();
+    t.remaining = Math.max(0, Math.round(msLeft / 1000));
+  } else {
+    t.remaining = typeof t.remaining === 'number' ? t.remaining : t.totalSecs;
+  }
+
+  if (!t.done && t.remaining <= 0) {
+    t.done = true;
+    saveTimersToStorage();
+    if (t.meta && t.meta.taskId && t.meta.subtaskId) {
+      renderTasks();
+      autoStartNextRoutineTimer(t.meta.taskId, t.meta.subtaskId);
+    }
+  } else if (!t.done && t.remaining > 0) {
+    // Restart intervals for running timers. Provide an onDone that chains using meta.
+    startTimer(tid, t.totalSecs, () => {
+      renderTasks();
+      if (t.meta && t.meta.taskId && t.meta.subtaskId) autoStartNextRoutineTimer(t.meta.taskId, t.meta.subtaskId);
+    }, t.meta);
+  }
+});
 
 renderAll();
 </script>
