@@ -174,7 +174,43 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
   color: var(--done-text);
   height: 30px;
 }
+</style>
+<script>
+// Reconcile timers after page becomes visible (handles screen lock/background)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  Object.keys(activeTimers).forEach(timerId => {
+    const t = activeTimers[timerId];
+    if (!t) return;
+    if (t.endTime) {
+      const msLeft = t.endTime - Date.now();
+      t.remaining = Math.max(0, Math.ceil(msLeft / 1000));
+      // clear stored endTime if timer wasn't running (paused) — keep it only for running timers
+    }
 
+    if (!t.done && t.remaining <= 0) {
+      if (t.interval) { clearInterval(t.interval); t.interval = null; }
+      t.done = true;
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Timer done! ✓', { body: 'You can now tick off the step.' });
+      }
+      showToast('⏱ Timer done! Tap the checkbox now.');
+      if (t.onDone) t.onDone();
+    } else {
+      // update UI for this timer
+      const disp = document.getElementById('tmr-disp-' + timerId);
+      const ring = document.getElementById('tmr-ring-' + timerId);
+      if (disp) { disp.textContent = fmtTime(t.remaining); disp.className = t.interval ? 'timer-countdown running' : 'timer-countdown'; }
+      if (ring && t.totalSecs) {
+        const R = 9, C = +(2 * Math.PI * R).toFixed(2);
+        const fraction = Math.max(0, t.remaining / t.totalSecs);
+        ring.setAttribute('stroke-dashoffset', (C - C * fraction).toFixed(2));
+      }
+    }
+  });
+});
+</script>
+<style>
 /* ── Quote ── */
 .quote-bar { margin: 1rem 1.25rem 0; background: var(--accent); color: white; border-radius: 12px; padding: 0.85rem 1rem; font-family: 'DM Serif Display', serif; font-size: 0.88rem; line-height: 1.5; }
 .quote-bar .q-author { font-family: 'DM Sans', sans-serif; font-size: 0.68rem; opacity: 0.7; margin-top: 4px; }
@@ -577,40 +613,68 @@ function showToast(msg) {
 function fmtTime(s) { const m = Math.floor(s/60), sec = s%60; return m + ':' + String(sec).padStart(2,'0'); }
 
 function startTimer(timerId, totalSecs, onDone) {
+  // If already running, ignore
   if (activeTimers[timerId] && activeTimers[timerId].interval) return;
-  let remaining = activeTimers[timerId] ? activeTimers[timerId].remaining : totalSecs;
-  activeTimers[timerId] = { remaining, totalSecs, done: false };
+
+  // Determine remaining seconds (resume support)
+  const existing = activeTimers[timerId];
+  let remaining = existing && typeof existing.remaining === 'number' ? existing.remaining : totalSecs;
+
+  // Compute endTime (ms) and save onDone so visibility handler can call it
+  const now = Date.now();
+  const endTime = now + remaining * 1000;
+  activeTimers[timerId] = { remaining, totalSecs, done: false, endTime, onDone };
+
   const R = 9, C = +(2 * Math.PI * R).toFixed(2);
 
   const tick = () => {
-    remaining--;
-    activeTimers[timerId].remaining = remaining;
+    const t = activeTimers[timerId];
+    if (!t) return;
+    if (t.endTime) {
+      const msLeft = t.endTime - Date.now();
+      const secsLeft = Math.max(0, Math.ceil(msLeft / 1000));
+      t.remaining = secsLeft;
+    }
+
     const disp = document.getElementById('tmr-disp-' + timerId);
     const ring = document.getElementById('tmr-ring-' + timerId);
     const btn = document.getElementById('tmr-btn-' + timerId);
-    if (disp) { disp.textContent = fmtTime(remaining); disp.className = 'timer-countdown running'; }
+    const remainingNow = activeTimers[timerId].remaining;
+    if (disp) { disp.textContent = fmtTime(remainingNow); disp.className = 'timer-countdown running'; }
     if (ring) {
-      const fraction = Math.max(0, remaining / totalSecs);
-      ring.setAttribute('stroke-dashoffset', (C - C * Math.max(0, remaining / totalSecs)).toFixed(2));
+      const fraction = t.totalSecs ? Math.max(0, remainingNow / t.totalSecs) : 0;
+      ring.setAttribute('stroke-dashoffset', (C - C * fraction).toFixed(2));
       ring.className.baseVal = 'timer-ring-fill running';
     }
-    if (remaining <= 0) {
-      clearInterval(activeTimers[timerId].interval);
-      activeTimers[timerId].done = true;
+
+    if (remainingNow <= 0) {
+      if (t.interval) clearInterval(t.interval);
+      t.interval = null;
+      t.done = true;
       if ('Notification' in window && Notification.permission === 'granted') {
         new Notification('Timer done! ✓', { body: 'You can now tick off the step.' });
       }
       showToast('⏱ Timer done! Tap the checkbox now.');
-      if (onDone) onDone();
+      if (t.onDone) t.onDone();
     }
   };
+
+  // run one tick immediately to update UI, then start interval
+  tick();
   activeTimers[timerId].interval = setInterval(tick, 1000);
 }
 
 function pauseTimer(timerId) {
-  if (activeTimers[timerId] && activeTimers[timerId].interval) {
-    clearInterval(activeTimers[timerId].interval);
-    activeTimers[timerId].interval = null;
+  const t = activeTimers[timerId];
+  if (t && t.interval) {
+    clearInterval(t.interval);
+    t.interval = null;
+    // Recalculate remaining from endTime and drop endTime so resume uses remaining
+    if (t.endTime) {
+      const msLeft = t.endTime - Date.now();
+      t.remaining = Math.max(0, Math.ceil(msLeft / 1000));
+      delete t.endTime;
+    }
   }
 }
 
