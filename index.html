@@ -93,9 +93,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .add-task-form { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
 .add-task-form input { flex: 1 1 140px; min-width: 120px; border: 1px solid var(--border); border-radius: 10px; padding: 0.65rem 0.85rem; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--text); background: white; }
 .add-task-form button { border: none; border-radius: 10px; padding: 0.65rem 1rem; background: var(--accent); color: white; font-weight: 600; cursor: pointer; }
-.mini-check { width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid var(--border-strong); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
-.subtask.done .mini-check { background: var(--accent); border-color: var(--accent); }
-
+  .delete-task-btn { margin-top: 0.55rem; border: 1px solid rgba(0,0,0,0.12); background: transparent; color: var(--muted); border-radius: 8px; padding: 0.4rem 0.75rem; font-size: 0.75rem; cursor: pointer; transition: background 0.2s ease; }
+  .delete-task-btn:hover { background: rgba(0,0,0,0.05); }
 /* ── Timer strip ── */
 .timer-widget {
   margin-top: 6px;
@@ -371,7 +370,6 @@ function buildTasks(dateKey, dayType) {
       if (!value) return null;
       const normalized = value.replace(/\u2013/g, '-').replace(/\s+/g, ' ').trim().toUpperCase();
       const parts = normalized.split(/\s*[-–]\s*/);
-      if (parts.length !== 2) return null;
       const parseSingle = (timeStr, fallbackPeriod) => {
         const normalizedTime = timeStr.replace(/\s+/g, ' ').trim();
         let match = normalizedTime.match(/^(\d{1,2})(?::(\d{1,2}))?\s*(AM|PM)$/);
@@ -387,6 +385,11 @@ function buildTasks(dateKey, dayType) {
         else if (period === 'PM') hour += 12;
         return hour * 60 + minute;
       };
+      if (parts.length === 1) {
+        const time = parseSingle(parts[0]);
+        return time === null ? null : { start: time, end: time };
+      }
+      if (parts.length !== 2) return null;
       const end = parseSingle(parts[1]);
       if (end === null) return null;
       const start = parseSingle(parts[0], parts[1].includes('AM') ? 'AM' : parts[1].includes('PM') ? 'PM' : null);
@@ -438,7 +441,7 @@ function buildTasks(dateKey, dayType) {
   const base = [
     { id: 'wake', title: 'Wake up', time: '7:30 AM', section: 'Morning' },
     { id: 'gym',  title: 'Gym',     time: '8:00 – 9:00 AM', section: 'Morning' },
-    { id: 'trya_am', title: 'Morning Routine', time: '9:10 – 10:15 AM', section: 'Morning', subtasks: morningSubtasks }
+    { id: 'trya_am', title: 'Morning Routine', time: dayType === 'wfh' ? '9:10 – 10:30 AM' : '9:10 – 10:15 AM', section: 'Morning', subtasks: morningSubtasks }
   ];
   if (dayType === 'wfo') base.push({ id: 'travel_out', title: 'Travel to office', time: '10:15 – 11:30 AM', section: 'Commute' });
   base.push({ id: 'office', title: dayType === 'wfo' ? 'Office' : 'Work from home', time: '11:30 AM – 8:30 PM', section: 'Work' });
@@ -490,6 +493,13 @@ function addCustomTask() {
   saveState(dateKey, state);
   titleEl.value = '';
   timeEl.value = '';
+  renderAll();
+}
+
+function deleteCustomTask(taskId) {
+  const state = loadState(currentDateKey);
+  state.customTasks = (state.customTasks || []).filter(t => t.id !== taskId);
+  saveState(currentDateKey, state);
   renderAll();
 }
 
@@ -623,6 +633,7 @@ function renderTasks() {
 
     sec.tasks.forEach(t => {
       const isFree = !!t.free;
+      const isCustom = t.section === 'Extra' && t.id.startsWith('custom_');
       if (!isFree) {
         total++;
         const isDone = !!state[t.id];
@@ -643,13 +654,14 @@ function renderTasks() {
         <div class="task-body">
           <div class="task-title">${t.title}</div>
           <div class="task-time">${t.time}</div>
+          ${isCustom ? `<button class="delete-task-btn" onclick="event.stopPropagation(); deleteCustomTask('${t.id}')">Delete</button>` : ''}
           ${t.subtasks ? '<div class="subtasks" id="sub_' + t.id + '"></div>' : ''}
         </div>
       `;
 
       if (!isFree) {
         card.addEventListener('click', e => {
-          if (e.target.closest('.subtask') || e.target.closest('.timer-widget') || e.target.closest('.timer-btn')) return;
+          if (e.target.closest('.subtask') || e.target.closest('.timer-widget') || e.target.closest('.timer-btn') || e.target.closest('.delete-task-btn')) return;
           const s = loadState(currentDateKey); s[t.id] = !s[t.id]; saveState(currentDateKey, s); renderAll();
         });
       }
@@ -753,8 +765,9 @@ function getDayCompletion(dateKey) {
   const d = new Date(dateKey + 'T00:00:00');
   const tasks = buildTasks(dateKey, getDayType(d));
   const state = loadState(dateKey);
-  const done = tasks.filter(t => state[t.id]).length;
-  return { done, total: tasks.length, pct: tasks.length ? done/tasks.length : 0 };
+  const done = tasks.filter(t => !t.free && state[t.id]).length;
+  const total = tasks.filter(t => !t.free).length;
+  return { done, total, pct: total ? done/total : 0 };
 }
 
 function renderStats() {
