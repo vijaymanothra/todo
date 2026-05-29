@@ -93,8 +93,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 .add-task-form { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.6rem; }
 .add-task-form input { flex: 1 1 140px; min-width: 120px; border: 1px solid var(--border); border-radius: 10px; padding: 0.65rem 0.85rem; font-family: 'DM Sans', sans-serif; font-size: 0.85rem; color: var(--text); background: white; }
 .add-task-form button { border: none; border-radius: 10px; padding: 0.65rem 1rem; background: var(--accent); color: white; font-weight: 600; cursor: pointer; }
-  .delete-task-btn { margin-top: 0.55rem; border: 1px solid rgba(0,0,0,0.12); background: transparent; color: var(--muted); border-radius: 8px; padding: 0.4rem 0.75rem; font-size: 0.75rem; cursor: pointer; transition: background 0.2s ease; }
-  .delete-task-btn:hover { background: rgba(0,0,0,0.05); }
+.delete-task-btn { margin-top: 0.55rem; border: 1px solid rgba(0,0,0,0.12); background: transparent; color: var(--muted); border-radius: 8px; padding: 0.4rem 0.75rem; font-size: 0.75rem; cursor: pointer; transition: background 0.2s ease; }
+.delete-task-btn:hover { background: rgba(0,0,0,0.05); }
+.mini-check { width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid var(--border-strong); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.subtask.done .mini-check { background: var(--accent); border-color: var(--accent); }
 /* ── Timer strip ── */
 .timer-widget {
   margin-top: 6px;
@@ -352,11 +354,11 @@ function buildTasks(dateKey, dayType) {
 
   const nightTasks = [
     {
-      id: 'trya_pm', title: 'Evening Routine', time: '10:00 – 11:00 PM', section: 'Night',
+      id: 'trya_pm', title: 'Evening Routine', time: '10:00 – 10:50 PM', section: 'Night',
       subtasks: [
         { id: 'trya_pm_tabs',  label: 'Tablets', time: '10:00 – 10:02 PM' },
         { id: 'trya_pm_minox', label: 'Apply M', time: '10:05 – 10:32 PM', timer: { secs: 27*60, label: '27 min wait', id: 'tmr_pm_minox' } },
-        { id: 'sk_strips',     label: 'Teeth whitening strips', time: '10:02 – 10:32 PM', timer: { secs: 30*60, label: '30 min', id: 'tmr_strips' } },
+        { id: 'sk_strips',     label: 'T strips', time: '10:02 – 10:32 PM', timer: { secs: 30*60, label: '30 min', id: 'tmr_strips' } },
         { id: 'sk_cleanser',   label: 'Wash face with cleanser', time: '10:35 – 10:40 PM' },
         { id: 'sk_cream',      label: 'Apply night cream', time: '10:40 – 10:45 PM' },
         { id: 'sk_lip',        label: 'Lip balm', time: '10:45 – 10:50 PM' }
